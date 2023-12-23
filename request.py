@@ -1,10 +1,13 @@
 # import os
 # import telebot
 import random
+import pandas as pd
+import os
+import telebot
 # from dotenv import load_dotenv
 #
 #
-# # Dot Env config
+# Dot Env config
 # load_dotenv()
 #
 # TOKEN = '6522058518:AAHYQS2_J0Lz2F_gX_lrd_jt6tjSOxNyN84'
@@ -27,7 +30,7 @@ MEALS_FILENAME = "meals.txt"
 #         func(*args)
 #     return wrapper
 
-import telebot
+
 
 API_TOKEN = '6522058518:AAHYQS2_J0Lz2F_gX_lrd_jt6tjSOxNyN84'
 
@@ -63,16 +66,15 @@ def suggest(msg):
         return
 
 
-
-@bot.message_handler(commands=['add'])
-def add(msg):
-    msg_start = '/add '
-    try:
-        meal = msg.text[len(msg_start):]
-        save_meal(meal)
-        bot.send_message(msg.chat.id, "New meal added")
-    except Exception as e:
-        bot.send_message(msg.chat.id, "Failed to add meal")
+# @bot.message_handler(commands=['add'])
+# def add(msg):
+#     msg_start = '/add '
+#     try:
+#         meal = msg.text[len(msg_start):]
+#         save_meal(meal)
+#         bot.send_message(msg.chat.id, "New meal added")
+#     except Exception as e:
+#         bot.send_message(msg.chat.id, "Failed to add meal")
 
 @bot.message_handler(commands=['all'])
 def all(msg):
@@ -84,6 +86,30 @@ def all(msg):
 
 @bot.message_handler(commands=['recipe'])
 def recipe(msg):
+    df_rec = pd.read_excel("data/data_w_functions.xlsx", sheet_name="recipes")
+    try:
+        s = df_rec.at[0, 'Greek Mushroom Ragu & Olive Oil Mash']
+        bot.send_message(msg.chat.id, s)
+        return
+    except Exception as e:
+        print(e)
+        bot.send_message(msg.chat.id, "Failed to send recipe")
+        return
+
+@bot.message_handler(commands=['ingredientsearch'])
+def ingredient_search(msg):
+    print(msg)
+    try:
+        bot.send_photo(msg.chat.id,
+                       'https://media.riverford.co.uk/images/photo-2600x1040-196a4c7baadddd70ed4e2f8e2a086170.jpg'
+                       )
+    except Exception as e:
+        print(e)
+        bot.send_message(msg.chat.id, "Failed to send recipe")
+        return
+
+@bot.message_handler(commands=['titlesearch'])
+def title_search(msg):
     try:
         bot.send_photo(msg.chat.id,
                        'https://media.riverford.co.uk/images/photo-2600x1040-196a4c7baadddd70ed4e2f8e2a086170.jpg'
@@ -94,12 +120,11 @@ def recipe(msg):
         return
 
 
-
 @bot.message_handler(commands=['info'])
 def info(msg):
     try:
         bot.send_message(msg.chat.id, "/info - list all bot interactions\n"
-                                      "/add <meal name> - add a new meal\n"
+                                      # "/add <meal name> - add a new meal\n"
                                       "/all - list all meals\n"
                                       "/suggest - ask for 5 random meal suggestions\n")
     except Exception as e:
