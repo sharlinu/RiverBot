@@ -2,16 +2,8 @@ import os
 import telebot
 import random
 import pandas as pd
-# from dotenv import load_dotenv
-#
-#
-# Dot Env config
 
 from dotenv import load_dotenv
-#
-#
-# # Dot Env config
-
 
 # load_dotenv()
 
@@ -40,6 +32,8 @@ def dl_data():
     df_quant=pd.read_excel("data/data_w_functions.xlsx",sheet_name="quantity")
     df_meas=pd.read_excel("data/data_w_functions.xlsx",sheet_name="measurement",na_values="")
     df_ingr=pd.read_excel("data/data_w_functions.xlsx",sheet_name="ingredient")
+    df = pd.read_excel("data/data_w_functions.xlsx", sheet_name="raw")
+
 
     df_sp_quant=pd.read_excel("data/data_w_functions.xlsx",sheet_name="quantity_sp")
     df_sp_meas=pd.read_excel("data/data_w_functions.xlsx",sheet_name="measurement_sp",na_values="")
@@ -48,9 +42,9 @@ def dl_data():
     df_quant=pd.concat([df_quant,df_sp_quant],axis=1)
     df_meas=pd.concat([df_meas,df_sp_meas],axis=1)
     df_ingr=pd.concat([df_ingr,df_sp_ingr],axis=1)
-    return df_ingr,df_meas,df_quant,df_rec
 
-df_ingr,df_meas,df_quant,df_rec=dl_data()
+
+    return df_ingr,df_meas,df_quant,df_rec, df
 
 def get_recipe(str_recipe):
     return df_rec.at[0,str_recipe]
@@ -138,22 +132,14 @@ def load_meals():
 
 
 API_TOKEN = '6522058518:AAHYQS2_J0Lz2F_gX_lrd_jt6tjSOxNyN84'
-
 bot = telebot.TeleBot(API_TOKEN)
-
+user_register_dict = {}
+df_ingr,df_meas,df_quant,df_rec, df =dl_data()
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     bot.reply_to(message,
                  "Hi there, ich bin your Riverford chatbot. I am here to help you with your mealplan - what can I do for you?")
-
-
-
-
-
-def save_meal(meal):
-    with open(MEALS_FILENAME, 'a') as f:
-        f.write(meal + '\n')
 
 
 @bot.message_handler(commands=['suggest'])
@@ -167,17 +153,6 @@ def suggest(msg):
         bot.send_message(msg.chat.id, "Failed to suggest meals")
         return
 
-
-# @bot.message_handler(commands=['add'])
-# def add(msg):
-#     msg_start = '/add '
-#     try:
-#         meal = msg.text[len(msg_start):]
-#         save_meal(meal)
-#         bot.send_message(msg.chat.id, "New meal added")
-#     except Exception as e:
-#         bot.send_message(msg.chat.id, "Failed to add meal")
-
 @bot.message_handler(commands=['all'])
 def all(msg):
     try:
@@ -188,7 +163,7 @@ def all(msg):
 
 @bot.message_handler(commands=['recipe'])
 def recipe(msg):
-    df_rec = pd.read_excel("data/data_w_functions.xlsx", sheet_name="recipes")
+    # df_rec = pd.read_excel("data/data_w_functions.xlsx", sheet_name="recipes")
     try:
         s = df_rec.at[0, 'Greek Mushroom Ragu & Olive Oil Mash']
         bot.send_message(msg.chat.id, s)
@@ -199,16 +174,24 @@ def recipe(msg):
         return
 
 @bot.message_handler(commands=['ingredientsearch'])
-def ingredient_search(msg):
-    print(msg)
-    try:
-        bot.send_photo(msg.chat.id,
-                       'https://media.riverford.co.uk/images/photo-2600x1040-196a4c7baadddd70ed4e2f8e2a086170.jpg'
-                       )
-    except Exception as e:
-        print(e)
-        bot.send_message(msg.chat.id, "Failed to send recipe")
-        return
+# @bot.message_handler(commands=['start'])
+def ingredient_start(msg):
+    bot.reply_to(msg , 'What ingredients do you have? Please separate with commas')
+    user_register_dict[msg.chat.id] = {}
+    bot.register_next_step_handler(msg , process_ingredients)
+
+def process_ingredients(msg):
+    # user_register_dict[msg.chat.id]['ingredients'] = msg.text
+
+    s = msg.text.split(',')
+    print(s)
+    mask = ~df.ingredients.isna()
+    for i in s:
+        mask &= df.ingredients.str.contains(i, case=False)
+    titles= df[mask].title.tolist()
+    bot.send_message(msg.chat.id, f'Found {len(df[mask])} recipes with those ingredients')
+    bot.send_message(msg.chat.id, '\n \n'.join(titles))
+    # start(msg = msg)
 
 @bot.message_handler(commands=['titlesearch'])
 def title_search(msg):
@@ -221,7 +204,7 @@ def title_search(msg):
         bot.send_message(msg.chat.id, "Failed to send recipe")
         return
 
-@bot.message_handler(commands=['recipe'])
+@bot.message_handler(commands=['suggest'])
 def suggest(msg):
     try:
         meals = load_meals()
@@ -259,6 +242,8 @@ def info(msg):
                                       # "/add <meal name> - add a new meal\n"
                                       "/all - list all meals\n"
                                       "/suggest - ask for 5 random meal suggestions\n")
+                                    # "/recipe - get recipe for a meal\n")
+                                    # "/ingredientsearch - search for recipes by ingredients\n")
     except Exception as e:
         return
 
