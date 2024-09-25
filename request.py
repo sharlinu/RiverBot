@@ -8,8 +8,8 @@ from dotenv import load_dotenv
 # load_dotenv()
 
 #
-# TOKEN = '6522058518:AAHYQS2_J0Lz2F_gX_lrd_jt6tjSOxNyN84'
-# chat_id = '6275940593'
+# TOKEN = 'XXX'
+# chat_id = 'XXX'
 # CHAT_IDS = set([int(x) for x in chat_id.split(',')])
 MEALS_FILENAME = "meals.txt"
 # updater = Updater('API key paste it here, use_context=True)
